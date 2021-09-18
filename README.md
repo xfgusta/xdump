@@ -6,6 +6,18 @@ See xdump(1) man page for more details.
 
 ## Installing
 
+### Arch Linux
+
+Arch Linux users may use the AUR [xdump](https://aur.archlinux.org/packages/xdump)
+
+```
+git clone https://aur.archlinux.org/xdump.git
+cd xdump
+makepkg -si
+```
+
+---
+
 Clone the [xdump git repository](https://github.com/xfgusta/xdump) and go to the directory
 
 ```
