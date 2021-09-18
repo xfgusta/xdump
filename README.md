@@ -16,6 +16,15 @@ cd xdump
 makepkg -si
 ```
 
+### Fedora Linux
+
+Fedora Linux users may use the Copr [xdump](https://copr.fedorainfracloud.org/coprs/xfgusta/xdump)
+
+```
+dnf copr enable xfgusta/xdump
+dnf install xdump
+```
+
 ---
 
 Clone the [xdump git repository](https://github.com/xfgusta/xdump) and go to the directory
