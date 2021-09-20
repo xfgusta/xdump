@@ -123,7 +123,7 @@ void xdump(FILE *file) {
 
                 if(color) {
                     for(long j = 0; j < i+1; j++) {
-                        if(ascii[j] != '.')
+                        if(isprint(buffer[j]))
                             printf(C_PRINTABLE "%c" C_RESET, ascii[j]);
                         else if(isspace(buffer[j]))
                             printf(C_WHITESPACE "." C_RESET);
