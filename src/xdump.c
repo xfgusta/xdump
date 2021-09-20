@@ -174,7 +174,7 @@ void file_skip(FILE *file) {
 
 long get_adjusted_column() {
     int fd;
-    if((fd = openat(AT_FDCWD, "/dev/tty", O_RDWR | O_CLOEXEC)) == -1)
+    if((fd = openat(AT_FDCWD, "/dev/tty", O_RDWR)) == -1)
         return 16;
 
     struct winsize winsz;
