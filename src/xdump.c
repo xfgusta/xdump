@@ -181,7 +181,8 @@ long get_adjusted_column() {
     if(ioctl(fd, TIOCGWINSZ, &winsz) == -1)
         return 16;
 
-    return (winsz.ws_col - 14) / 4;
+    long col = (winsz.ws_col - 14) / 4;
+    return col > 0 ? col : 16;
 }
 
 void str_to_long(char *s, long *n) {
