@@ -210,6 +210,6 @@ int get_spaces(long n) {
 }
 
 void usage() {
-    puts("usage: xdump [-hv] [-ac] [-w columns] [-s offset] [-n length] "
+    puts("Usage: xdump [-hv] [-ac] [-w columns] [-s offset] [-n length] "
          "[file]");
 }
