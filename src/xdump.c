@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-#define XDUMP_VERSION "0.1.0"
+#define XDUMP_VERSION "0.1.1"
 
 #define isascii(c) (((c) & ~0x7f) == 0)
 
