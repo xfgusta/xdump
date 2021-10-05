@@ -70,7 +70,8 @@ int main(int argc, char **argv) {
     if(c > 0) {
         FILE *file = fopen(argv[optind], "rb");
         if(!file) {
-            perror("fopen");
+            fprintf(stderr, "Cannot open %s: %s\n", argv[optind],
+                    strerror(errno));
             exit(1);
         }
         xdump(file);
@@ -154,19 +155,20 @@ void file_skip(FILE *file) {
         if(errno == ESPIPE) {
             for(long i = 0; i < skip_size; i++) {
                 if(fgetc(file) == EOF) {
-                    fprintf(stderr, "reached end of file while skipping\n");
+                    fprintf(stderr, "Reached end of file while skipping\n");
                     exit(1);
                 }
             }
         } else {
-            perror("fseek");
+            fprintf(stderr, "Cannot skip %ld bytes: %s\n", skip_size,
+                    strerror(errno));
             exit(1);
         }
     }
 
     int c = fgetc(file);
     if(c == EOF) {
-        fprintf(stderr, "reached end of file while skipping\n");
+        fprintf(stderr, "Reached end of file while skipping\n");
         exit(1);
     } else
         ungetc(c, file);
@@ -188,10 +190,10 @@ long get_adjusted_column() {
 void str_to_long(char *s, long *n) {
     *n = strtol(s, 0, 10);
     if(errno == ERANGE) {
-        perror("strtol");
+        fprintf(stderr, "Invalid number: %s\n", strerror(errno));
         exit(1);
     } else if(*n <= 0) {
-        fprintf(stderr, "invalid number\n");
+        fprintf(stderr, "Invalid number: Cannot be less than or equal to 0\n");
         exit(1);
     }
 }
