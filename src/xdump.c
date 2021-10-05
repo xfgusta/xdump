@@ -18,7 +18,7 @@
 #define C_PRINTABLE  "\033[38;5;115m"
 #define C_WHITESPACE "\033[38;5;228m"
 #define C_ASCII      "\033[38;5;117m"
-#define C_NULL       "\033[38;5;248m"
+#define C_NUL        "\033[38;5;248m"
 
 bool color = false;
 
@@ -103,7 +103,7 @@ void xdump(FILE *file) {
                 else if(isspace(buffer[i]))
                     printf(C_WHITESPACE "%02x" C_RESET, buffer[i]);
                 else if(!buffer[i])
-                    printf(C_NULL "%02x" C_RESET, buffer[i]);
+                    printf(C_NUL "%02x" C_RESET, buffer[i]);
                 else if(isascii(buffer[i]))
                     printf(C_ASCII "%02x" C_RESET, buffer[i]);
                 else
@@ -128,7 +128,7 @@ void xdump(FILE *file) {
                         else if(isspace(buffer[j]))
                             printf(C_WHITESPACE "." C_RESET);
                         else if(!buffer[j])
-                            printf(C_NULL "." C_RESET);
+                            printf(C_NUL "." C_RESET);
                         else if(isascii(buffer[j]))
                             printf(C_ASCII "." C_RESET);
                         else
