@@ -1,19 +1,27 @@
-ALL=xdump
-
 CC=gcc
-CFLAGS=-g -O2 -Wall -Wextra -pedantic -std=c99
+CFLAGS=-Wall -Wextra -Werror -pedantic -std=c11 -O2
 
-DESTDIR=
 PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
 MANDIR=$(PREFIX)/share/man
 
-all: $(ALL)
+INSTALL=install -p -m 0755
+INSTALL_MAN=install -p -m 0644
 
-install: all
-	mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)/man1
-	install -m0755 $(ALL) $(DESTDIR)$(BINDIR)
-	install -m0644 $(ALL:=.1) $(DESTDIR)$(MANDIR)/man1
+xdump: xdump.c
+	$(CC) $(CFLAGS) xdump.c $(LDFLAGS) -o xdump
+
+install: xdump
+	mkdir -p $(DESTDIR)$(BINDIR)
+	$(INSTALL) xdump $(DESTDIR)$(BINDIR)
+	mkdir -p $(DESTDIR)$(MANDIR)/man1
+	$(INSTALL_MAN) xdump.1 $(DESTDIR)$(MANDIR)/man1
+
+uninstall:
+	rm -f $(DESTDIR)$(BINDIR)/xdump
+	rm -f $(DESTDIR)$(MANDIR)/man1/xdump.1
 
 clean:
-	rm -f $(ALL)
+	rm -f xdump
+
+.PHONY: install uninstall clean
