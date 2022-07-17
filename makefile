@@ -8,12 +8,12 @@ PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
 MANDIR=$(PREFIX)/share/man
 
-all: src/$(ALL)
+all: $(ALL)
 
 install: all
 	mkdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)/man1
-	install -m0755 src/$(ALL) $(DESTDIR)$(BINDIR)
-	install -m0644 man/$(ALL:=.1) $(DESTDIR)$(MANDIR)/man1
+	install -m0755 $(ALL) $(DESTDIR)$(BINDIR)
+	install -m0644 $(ALL:=.1) $(DESTDIR)$(MANDIR)/man1
 
 clean:
-	rm -f src/$(ALL)
+	rm -f $(ALL)
