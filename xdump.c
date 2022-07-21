@@ -321,8 +321,12 @@ int main(int argc, char **argv) {
             }
 
             // print filename only when more than one was given
-            if(argc != 1)
-                printf("%s:\n", filename);
+            if(argc != 1) {
+                if(no_color_is_on)
+                    printf("%s:\n", filename);
+                else
+                    printf("\033[1m%s:\033[0m\n", filename);
+            }
 
             xdump(file, filename);
             fclose(file);
