@@ -12,9 +12,32 @@
 
 #define print_error(...) fprintf(stderr, "xdump: " __VA_ARGS__);
 
+int no_color_is_on;
 long columns_opt = 16;
 long skip_opt = 0;
 long length_opt = -1;
+
+// XDUMP_COLORS="off=7;bar=7;nul=243;print=83;space=220;ascii=81;nonascii=197"
+int color_offset = 7;
+int color_bar = 7;
+int color_nul = 243;
+int color_printable = 83;
+int color_whitespace = 220;
+int color_ascii = 81;
+int color_nonascii = 197;
+
+int get_color_code(unsigned char c) {
+    if(c == '\0')
+        return color_nul;
+    else if(isspace(c))
+        return color_whitespace;
+    else if(isprint(c))
+        return color_printable;
+    else if((c & ~0x7f) == 0)
+        return color_ascii;
+    else
+        return color_nonascii;
+}
 
 void xdump(FILE *file, char *filename) {
     unsigned char buffer[columns_opt];
@@ -57,7 +80,10 @@ void xdump(FILE *file, char *filename) {
 
     while((bytes_read = fread(buffer, 1, columns_opt, file)) > 0) {
         // print offset
-        printf("%08lx", offset);
+        if(no_color_is_on)
+            printf("%08lx", offset);
+        else
+            printf("\033[38;5;%dm%08lx\033[0m", color_offset, offset);
 
         printf("  ");
 
@@ -77,7 +103,11 @@ void xdump(FILE *file, char *filename) {
             }
 
             if(i < bytes_read) {
-                printf("%02x", buffer[i]);
+                if(no_color_is_on)
+                    printf("%02x", buffer[i]);
+                else
+                    printf("\033[38;5;%dm%02x\033[0m",
+                           get_color_code(buffer[i]), buffer[i]);
             } else
                 printf("  ");
         }
@@ -86,23 +116,43 @@ void xdump(FILE *file, char *filename) {
 
         // print characters area
         for(long i = 0; i < columns_opt; i++) {
-            if(i == 0)
-                putchar('|');
+            if(i == 0) {
+                if(no_color_is_on)
+                    putchar('|');
+                else
+                    printf("\033[38;5;%dm|\033[0m", color_bar);
+            }
 
             if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
-                putchar('|');
+                if(no_color_is_on)
+                    putchar('|');
+                else
+                    printf("\033[38;5;%dm|\033[0m", color_bar);
                 break;
             }
 
             if(i < bytes_read) {
-                if(isprint(buffer[i]))
-                    putchar(buffer[i]);
-                else
-                    putchar('.');
+                if(isprint(buffer[i])) {
+                    if(no_color_is_on)
+                        putchar(buffer[i]);
+                    else
+                        printf("\033[38;5;%dm%c\033[0m", color_printable,
+                               buffer[i]);
+                } else {
+                    if(no_color_is_on)
+                        putchar('.');
+                    else
+                        printf("\033[38;5;%dm.\033[0m",
+                               get_color_code(buffer[i]));
+                }
             }
 
-            if(i + 1 == bytes_read)
-                putchar('|');
+            if(i + 1 == bytes_read) {
+                if(no_color_is_on)
+                    putchar('|');
+                else
+                    printf("\033[38;5;%dm|\033[0m", color_bar);
+            }
         }
 
         putchar('\n');
@@ -115,7 +165,74 @@ void xdump(FILE *file, char *filename) {
         }
     }
 
-    printf("%08lx\n", offset);
+    if(no_color_is_on)
+        printf("%08lx\n", offset);
+    else
+        printf("\033[38;5;%dm%08lx\033[0m\n", color_offset, offset);
+}
+
+// convert a string to a valid 8-bit color code
+int str_to_color_code(char *str) {
+    int color;
+    char *endptr;
+
+    errno = 0;
+    color = strtol(str, &endptr, 10);
+    if(errno != 0) {
+        print_error("XDUMP_COLORS: strtol failed for \"%s\": %s\n", str,
+                    strerror(errno));
+        exit(EXIT_FAILURE);
+    } else if(str == endptr) {
+        print_error("XDUMP_COLORS: no digits were found for \"%s\"\n", str);
+        exit(EXIT_FAILURE);
+    } else if(color < 0 || color > 255) {
+        print_error("XDUMP_COLORS: \"%d\" for \"%s\" is out of range\n", color,
+                    str);
+        exit(EXIT_FAILURE);
+    }
+
+    return color;
+}
+
+// parse XDUMP_COLORS format string and set the specified colors
+void set_new_colors(char *format) {
+    char *token;
+
+    token = strtok(format, ";");
+    while(token) {
+        char *key = token;
+        char *value;
+
+        value = strchr(token, '=');
+        if(!value) {
+            print_error("XDUMP_COLORS: color code for \"%s\" not found\n", key);
+            exit(EXIT_FAILURE);
+        }
+
+        // end the key string before the '=' and skip it
+        *value++ = '\0';
+
+        if(!strcmp(key, "off"))
+            color_offset = str_to_color_code(value);
+        else if(!strcmp(key, "bar"))
+            color_bar = str_to_color_code(value);
+        else if(!strcmp(key, "nul"))
+            color_nul = str_to_color_code(value);
+        else if(!strcmp(key, "print"))
+            color_printable = str_to_color_code(value);
+        else if(!strcmp(key, "space"))
+            color_whitespace = str_to_color_code(value);
+        else if(!strcmp(key, "ascii"))
+            color_ascii = str_to_color_code(value);
+        else if(!strcmp(key, "nonascii"))
+            color_nonascii = str_to_color_code(value);
+        else {
+            print_error("XDUMP_COLORS: unknown type \"%s\"\n", key);
+            exit(EXIT_FAILURE);
+        }
+
+        token = strtok(NULL, ";");
+    }
 }
 
 // strtol wrapper
@@ -153,6 +270,8 @@ void display_version() {
 
 int main(int argc, char **argv) {
     int opt;
+    char *no_color;
+    char *xdump_colors;
 
     while((opt = getopt(argc, argv, "hvs:n:")) != -1) {
         switch(opt) {
@@ -176,6 +295,18 @@ int main(int argc, char **argv) {
     // skip to the non-option arguments
     argc -= optind;
     argv += optind;
+
+
+    // disable colored output when NO_COLOR is present or when the standard
+    // output isn't connected to a terminal
+    no_color = getenv("NO_COLOR");
+    if((no_color && *no_color != '\0') || !isatty(STDOUT_FILENO))
+        no_color_is_on = 1;
+
+    // set the colors defined by XDUMP_COLORS
+    xdump_colors = getenv("XDUMP_COLORS");
+    if(xdump_colors && !no_color_is_on)
+        set_new_colors(xdump_colors);
 
     if(argc > 0) {
         for(int i = 0; i < argc; i++) {
