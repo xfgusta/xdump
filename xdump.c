@@ -13,9 +13,10 @@
 #define print_error(...) fprintf(stderr, "xdump: " __VA_ARGS__);
 
 int no_color_is_on;
-long columns_opt = 16;
-long skip_opt = 0;
+long skip_opt;
 long length_opt = -1;
+long columns_opt = 16;
+long group_opt = -1;
 
 // XDUMP_COLORS="off=7;bar=7;nul=243;print=83;space=220;ascii=81;nonascii=197"
 int color_offset = 7;
@@ -43,7 +44,7 @@ void xdump(FILE *file, char *filename) {
     unsigned char buffer[columns_opt];
     long bytes_read = 0;
     long offset = skip_opt;
-    long group = columns_opt / 2;
+    long group = group_opt > 0 ? group_opt : columns_opt / 2;
 
     // skip bytes from the beginning of the file
     if(skip_opt > 0) {
@@ -252,14 +253,15 @@ long str_to_long(char *str) {
 
 void display_help() {
     printf(
-        "Usage: xdump [-h] [-v] [-s OFFSET] [-n LENGTH] [-w COLUMNS] "
+        "Usage: xdump [-h] [-v] [-s OFFSET] [-n LENGTH] [-w COUNT] [-g SIZE] "
         "[FILE...]\n\n"
         "Options:\n"
-        "  -h          display this help and exit\n"
-        "  -v          output version information and exit\n"
-        "  -s OFFSET   skip OFFSET bytes from the beginning of the input\n"
-        "  -n LENGTH   interpret only LENGTH bytes of input\n"
-        "  -w COLUMNS  number of hex per line\n\n"
+        "  -h         display this help and exit\n"
+        "  -v         output version information and exit\n"
+        "  -s OFFSET  skip OFFSET bytes from the beginning of the input\n"
+        "  -n LENGTH  interpret only LENGTH bytes of input\n"
+        "  -w COUNT   print COUNT hex per line\n"
+        "  -g SIZE    group output into SIZE-hex groups\n\n"
         "Report bugs to <https://github.com/xfgusta/xdump/issues>\n"
     );
     exit(EXIT_SUCCESS);
@@ -275,7 +277,7 @@ int main(int argc, char **argv) {
     char *no_color;
     char *xdump_colors;
 
-    while((opt = getopt(argc, argv, "hvs:n:w:")) != -1) {
+    while((opt = getopt(argc, argv, "hvs:n:w:g:")) != -1) {
         switch(opt) {
             case 'h':
                 display_help();
@@ -292,6 +294,9 @@ int main(int argc, char **argv) {
             case 'w':
                 columns_opt = str_to_long(optarg);
                 break;
+            case 'g':
+                group_opt = str_to_long(optarg);
+                break;
             case '?':
                 exit(EXIT_FAILURE);
         }
@@ -300,7 +305,6 @@ int main(int argc, char **argv) {
     // skip to the non-option arguments
     argc -= optind;
     argv += optind;
-
 
     // disable colored output when NO_COLOR is present or when the standard
     // output isn't connected to a terminal
