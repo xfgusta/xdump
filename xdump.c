@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
@@ -27,6 +28,7 @@ int color_whitespace = 220;
 int color_ascii = 81;
 int color_nonascii = 197;
 
+// get the color code based on the category of the byte
 int get_color_code(unsigned char c) {
     if(c == '\0')
         return color_nul;
@@ -38,6 +40,22 @@ int get_color_code(unsigned char c) {
         return color_ascii;
     else
         return color_nonascii;
+}
+
+// print color output based on the color code if NO_COLOR is off
+void pretty_printf(int color_code, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    if(!no_color_is_on)
+        printf("\033[38;5;%dm", color_code);
+
+    vprintf(fmt, args);
+
+    if(!no_color_is_on)
+        printf("\033[0m");
+
+    va_end(args);
 }
 
 void xdump(FILE *file, char *filename) {
@@ -81,15 +99,14 @@ void xdump(FILE *file, char *filename) {
 
     while((bytes_read = fread(buffer, 1, columns_opt, file)) > 0) {
         // print offset
-        if(no_color_is_on)
-            printf("%08lx", offset);
-        else
-            printf("\033[38;5;%dm%08lx\033[0m", color_offset, offset);
+        pretty_printf(color_offset, "%08lx", offset);
 
         printf("  ");
 
         // print hexadecimal area
         for(long i = 0; i < columns_opt; i++) {
+            unsigned char c = buffer[i];
+
             if(i != 0) {
                 putchar(' ');
 
@@ -103,13 +120,9 @@ void xdump(FILE *file, char *filename) {
                 continue;
             }
 
-            if(i < bytes_read) {
-                if(no_color_is_on)
-                    printf("%02x", buffer[i]);
-                else
-                    printf("\033[38;5;%dm%02x\033[0m",
-                           get_color_code(buffer[i]), buffer[i]);
-            } else
+            if(i < bytes_read)
+                pretty_printf(get_color_code(c), "%02x", c);
+            else
                 printf("  ");
         }
 
@@ -117,43 +130,25 @@ void xdump(FILE *file, char *filename) {
 
         // print characters area
         for(long i = 0; i < columns_opt; i++) {
-            if(i == 0) {
-                if(no_color_is_on)
-                    putchar('|');
-                else
-                    printf("\033[38;5;%dm|\033[0m", color_bar);
-            }
+            unsigned char c = buffer[i];
+
+            if(i == 0)
+                pretty_printf(color_bar, "|");
 
             if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
-                if(no_color_is_on)
-                    putchar('|');
-                else
-                    printf("\033[38;5;%dm|\033[0m", color_bar);
+                pretty_printf(color_bar, "|");
                 break;
             }
 
             if(i < bytes_read) {
-                if(isprint(buffer[i])) {
-                    if(no_color_is_on)
-                        putchar(buffer[i]);
-                    else
-                        printf("\033[38;5;%dm%c\033[0m", color_printable,
-                               buffer[i]);
-                } else {
-                    if(no_color_is_on)
-                        putchar('.');
-                    else
-                        printf("\033[38;5;%dm.\033[0m",
-                               get_color_code(buffer[i]));
-                }
+                if(isprint(c))
+                    pretty_printf(color_printable, "%c", c);
+                else
+                    pretty_printf(get_color_code(c), ".");
             }
 
-            if(i + 1 == bytes_read) {
-                if(no_color_is_on)
-                    putchar('|');
-                else
-                    printf("\033[38;5;%dm|\033[0m", color_bar);
-            }
+            if(i + 1 == bytes_read)
+                pretty_printf(color_bar, "|");
         }
 
         putchar('\n');
@@ -166,10 +161,8 @@ void xdump(FILE *file, char *filename) {
         }
     }
 
-    if(no_color_is_on)
-        printf("%08lx\n", offset);
-    else
-        printf("\033[38;5;%dm%08lx\033[0m\n", color_offset, offset);
+    pretty_printf(color_offset, "%08lx", offset);
+    putchar('\n');
 }
 
 // convert a string to a valid 8-bit color code
