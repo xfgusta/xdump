@@ -252,12 +252,14 @@ long str_to_long(char *str) {
 
 void display_help() {
     printf(
-        "Usage: xdump [-h] [-v] [-s OFFSET] [-n LENGTH] [FILE...]\n\n"
+        "Usage: xdump [-h] [-v] [-s OFFSET] [-n LENGTH] [-w COLUMNS] "
+        "[FILE...]\n\n"
         "Options:\n"
-        "  -h         display this help and exit\n"
-        "  -v         output version information and exit\n"
-        "  -s OFFSET  skip OFFSET bytes from the beginning of the input\n"
-        "  -n LENGTH  interpret only LENGTH bytes of input\n\n"
+        "  -h          display this help and exit\n"
+        "  -v          output version information and exit\n"
+        "  -s OFFSET   skip OFFSET bytes from the beginning of the input\n"
+        "  -n LENGTH   interpret only LENGTH bytes of input\n"
+        "  -w COLUMNS  number of hex per line\n\n"
         "Report bugs to <https://github.com/xfgusta/xdump/issues>\n"
     );
     exit(EXIT_SUCCESS);
@@ -273,7 +275,7 @@ int main(int argc, char **argv) {
     char *no_color;
     char *xdump_colors;
 
-    while((opt = getopt(argc, argv, "hvs:n:")) != -1) {
+    while((opt = getopt(argc, argv, "hvs:n:w:")) != -1) {
         switch(opt) {
             case 'h':
                 display_help();
@@ -286,6 +288,9 @@ int main(int argc, char **argv) {
                 break;
             case 'n':
                 length_opt = str_to_long(optarg);
+                break;
+            case 'w':
+                columns_opt = str_to_long(optarg);
                 break;
             case '?':
                 exit(EXIT_FAILURE);
