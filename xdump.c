@@ -3,213 +3,206 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <errno.h>
-#include <getopt.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
-#define XDUMP_VERSION "0.1.1"
+#define VERSION "0.1.1"
 
-#define isascii(c) (((c) & ~0x7f) == 0)
+#define print_error(...) fprintf(stderr, "xdump: " __VA_ARGS__);
 
-#define C_RESET      "\033[0m"
-#define C_PRINTABLE  "\033[38;5;115m"
-#define C_WHITESPACE "\033[38;5;228m"
-#define C_ASCII      "\033[38;5;117m"
-#define C_NUL        "\033[38;5;248m"
+long columns_opt = 16;
+long skip_opt = 0;
+long length_opt = -1;
 
-bool color = false;
+void xdump(FILE *file, char *filename) {
+    unsigned char buffer[columns_opt];
+    long bytes_read = 0;
+    long offset = skip_opt;
+    long group = columns_opt / 2;
 
-long column = 16;
-long skip_size = 0;
-long length = 0;
+    // skip bytes from the beginning of the file
+    if(skip_opt > 0) {
+        struct stat st;
 
-void xdump(FILE *file);
-void file_skip(FILE *file);
-long get_adjusted_column();
-void str_to_long(char *s, long *n);
-int get_spaces(long n);
-void usage();
+        errno = 0;
+        if(fstat(fileno(file), &st) == -1) {
+            print_error("cannot stat file \"%s\": %s", filename,
+                        strerror(errno));
+            return;
+        }
+
+        // this way the offset will not be greater than the file size
+        if(S_ISREG(st.st_mode) && skip_opt > st.st_size)
+            offset = st.st_size;
+
+        errno = 0;
+        if(fseek(file, skip_opt, SEEK_SET) == -1) {
+            // if the file isn't seekable
+            if(errno == ESPIPE) {
+                long pos = 0;
+                while(pos != skip_opt && fgetc(file) != EOF)
+                    pos++;
+
+                offset = pos;
+            }
+        }
+
+        if(ferror(file)) {
+            print_error("error while seeking \"%s\"\n", filename);
+            return;
+        }
+    }
+
+    while((bytes_read = fread(buffer, 1, columns_opt, file)) > 0) {
+        // print offset
+        printf("%08lx", offset);
+
+        printf("  ");
+
+        // print hexadecimal area
+        for(long i = 0; i < columns_opt; i++) {
+            if(i != 0) {
+                putchar(' ');
+
+                if(i % group == 0)
+                    putchar(' ');
+            }
+
+            // stop interpreting the bytes if the -n option was used
+            if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
+                printf("  ");
+                continue;
+            }
+
+            if(i < bytes_read) {
+                printf("%02x", buffer[i]);
+            } else
+                printf("  ");
+        }
+
+        printf("  ");
+
+        // print characters area
+        for(long i = 0; i < columns_opt; i++) {
+            if(i == 0)
+                putchar('|');
+
+            if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
+                putchar('|');
+                break;
+            }
+
+            if(i < bytes_read) {
+                if(isprint(buffer[i]))
+                    putchar(buffer[i]);
+                else
+                    putchar('.');
+            }
+
+            if(i + 1 == bytes_read)
+                putchar('|');
+        }
+
+        putchar('\n');
+
+        offset += bytes_read;
+
+        if(length_opt != -1 && offset >= length_opt) {
+            offset = skip_opt + length_opt;
+            break;
+        }
+    }
+
+    printf("%08lx\n", offset);
+}
+
+// strtol wrapper
+long str_to_long(char *str) {
+    long num;
+    char *endptr;
+
+    errno = 0;
+    num = strtol(str, &endptr, 10);
+    if(errno != 0 || str == endptr) {
+        print_error("cannot convert \"%s\" to long int\n", str);
+        exit(EXIT_FAILURE);
+    }
+
+    return num;
+}
+
+void display_help() {
+    printf(
+        "Usage: xdump [-h] [-v] [-s OFFSET] [-n LENGTH] [FILE...]\n\n"
+        "Options:\n"
+        "  -h         display this help and exit\n"
+        "  -v         output version information and exit\n"
+        "  -s OFFSET  skip OFFSET bytes from the beginning of the input\n"
+        "  -n LENGTH  interpret only LENGTH bytes of input\n\n"
+        "Report bugs to <https://github.com/xfgusta/xdump/issues>\n"
+    );
+    exit(EXIT_SUCCESS);
+}
+
+void display_version() {
+    printf("xdump version %s\n", VERSION);
+    exit(EXIT_SUCCESS);
+}
 
 int main(int argc, char **argv) {
-    bool adjust_column = false;
-
     int opt;
-    while((opt = getopt(argc, argv, "hvacw:s:n:")) != -1) {
+
+    while((opt = getopt(argc, argv, "hvs:n:")) != -1) {
         switch(opt) {
             case 'h':
-                usage();
-                return 0;
+                display_help();
+                break;
             case 'v':
-                puts(XDUMP_VERSION);
-                return 0;
-            case 'a':
-                adjust_column = true;
-                break;
-            case 'c':
-                color = true;
-                break;
-            case 'w':
-                str_to_long(optarg, &column);
+                display_version();
                 break;
             case 's':
-                str_to_long(optarg, &skip_size);
+                skip_opt = str_to_long(optarg);
                 break;
             case 'n':
-                str_to_long(optarg, &length);
+                length_opt = str_to_long(optarg);
                 break;
+            case '?':
+                exit(EXIT_FAILURE);
         }
     }
 
-    if(adjust_column)
-        column = get_adjusted_column();
+    // skip to the non-option arguments
+    argc -= optind;
+    argv += optind;
 
-    int c = argc - optind;
-    if(c > 0) {
-        FILE *file = fopen(argv[optind], "rb");
-        if(!file) {
-            fprintf(stderr, "Cannot open %s: %s\n", argv[optind],
-                    strerror(errno));
-            exit(1);
-        }
-        xdump(file);
-        fclose(file);
-    } else
-        xdump(stdin);
+    if(argc > 0) {
+        for(int i = 0; i < argc; i++) {
+            FILE *file;
+            char *filename = argv[i];
 
-    return 0;
-}
-
-void xdump(FILE *file) {
-    if(skip_size > 0)
-        file_skip(file);
-
-    unsigned char buffer[column];
-    unsigned char ascii[column+1];
-
-    long addr = skip_size;
-    long total = 1;
-
-    for(long bytes = 0; (bytes = fread(buffer, 1, sizeof(buffer), file)) > 0;
-            addr += bytes) {
-        for(long i = 0; i < bytes; i++, total++) {
-            if(!i)
-                printf("%08lx  ", addr+i);
-
-            if(color) {
-                if(isprint(buffer[i]))
-                    printf(C_PRINTABLE "%02x" C_RESET, buffer[i]);
-                else if(isspace(buffer[i]))
-                    printf(C_WHITESPACE "%02x" C_RESET, buffer[i]);
-                else if(!buffer[i])
-                    printf(C_NUL "%02x" C_RESET, buffer[i]);
-                else if(isascii(buffer[i]))
-                    printf(C_ASCII "%02x" C_RESET, buffer[i]);
-                else
-                    printf("%02x", buffer[i]);
-            } else
-                printf("%02x", buffer[i]);
-
-            printf("%*c", (i+1 == column/2) ? 2 : 1, ' ');
-
-            ascii[i] = isprint(buffer[i]) ? buffer[i] : '.';
-
-            if(i+1 == bytes || (length && length == total)) {
-
-                ascii[i+1] = 0;
-
-                printf("%*c|", get_spaces(i+1), ' ');
-
-                if(color) {
-                    for(long j = 0; j < i+1; j++) {
-                        if(isprint(buffer[j]))
-                            printf(C_PRINTABLE "%c" C_RESET, ascii[j]);
-                        else if(isspace(buffer[j]))
-                            printf(C_WHITESPACE "." C_RESET);
-                        else if(!buffer[j])
-                            printf(C_NUL "." C_RESET);
-                        else if(isascii(buffer[j]))
-                            printf(C_ASCII "." C_RESET);
-                        else
-                            putchar(ascii[j]);
-                    }
-                } else
-                    printf("%s", ascii);
-
-                puts("|");
-
-                if(length && length == total) {
-                    printf("%08lx  \n", addr+i+1);
-                    exit(0);
-                }
+            file = fopen(filename, "r");
+            if(!file) {
+                print_error("cannot open \"%s\": %s\n", filename,
+                            strerror(errno));
+                continue;
             }
+
+            // print filename only when more than one was given
+            if(argc != 1)
+                printf("%s:\n", filename);
+
+            xdump(file, filename);
+            fclose(file);
+
+            // separate the output of each file
+            if(argc != 1 && i+1 < argc)
+                putchar('\n');
         }
-    }
-    printf("%08lx  \n", addr);
-}
-
-void file_skip(FILE *file) {
-    if(fseek(file, skip_size, SEEK_CUR) == -1) {
-        if(errno == ESPIPE) {
-            for(long i = 0; i < skip_size; i++) {
-                if(fgetc(file) == EOF) {
-                    fprintf(stderr, "Reached end of file while skipping\n");
-                    exit(1);
-                }
-            }
-        } else {
-            fprintf(stderr, "Cannot skip %ld bytes: %s\n", skip_size,
-                    strerror(errno));
-            exit(1);
-        }
+    } else {
+        xdump(stdin, "(standard input)");
     }
 
-    int c = fgetc(file);
-    if(c == EOF) {
-        fprintf(stderr, "Reached end of file while skipping\n");
-        exit(1);
-    } else
-        ungetc(c, file);
-}
-
-long get_adjusted_column() {
-    int fd;
-    if((fd = openat(AT_FDCWD, "/dev/tty", O_RDWR)) == -1)
-        return 16;
-
-    struct winsize winsz;
-    if(ioctl(fd, TIOCGWINSZ, &winsz) == -1)
-        return 16;
-
-    long col = (winsz.ws_col - 14) / 4;
-    return col > 0 ? col : 16;
-}
-
-void str_to_long(char *s, long *n) {
-    *n = strtol(s, 0, 10);
-    if(errno == ERANGE) {
-        fprintf(stderr, "Invalid number: %s\n", strerror(errno));
-        exit(1);
-    } else if(*n <= 0) {
-        fprintf(stderr, "Invalid number: Cannot be less than or equal to 0\n");
-        exit(1);
-    }
-}
-
-int get_spaces(long n) {
-    int spaces = 0;
-    if(n < column)
-        spaces = column * 3 - n * 3 + 1;
-
-    if(n < column/2)
-        spaces++;
-
-    return spaces;
-}
-
-void usage() {
-    puts("Usage: xdump [-hv] [-ac] [-w columns] [-s offset] [-n length] "
-         "[file]");
+    exit(EXIT_SUCCESS);
 }
