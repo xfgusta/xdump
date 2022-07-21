@@ -213,10 +213,6 @@ void set_new_colors(char *format) {
             color_ascii = str_to_color_code(value);
         else if(!strcmp(key, "nonascii"))
             color_nonascii = str_to_color_code(value);
-        else {
-            print_error("XDUMP_COLORS: unknown type \"%s\"\n", key);
-            exit(EXIT_FAILURE);
-        }
 
         token = strtok(NULL, ";");
     }
