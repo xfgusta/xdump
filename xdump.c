@@ -19,14 +19,14 @@ long length_opt = -1;
 long columns_opt = 16;
 long group_opt = -1;
 
-// XDUMP_COLORS="off=7;bar=7;nul=243;print=83;space=220;ascii=81;nonascii=197"
+// XDUMP_COLORS="off=7;bar=7;nul=238;print=7;space=227;ascii=111;nonascii=204"
 int color_offset = 7;
 int color_bar = 7;
-int color_nul = 243;
-int color_printable = 83;
-int color_whitespace = 220;
-int color_ascii = 81;
-int color_nonascii = 197;
+int color_nul = 238;
+int color_printable = 7;
+int color_whitespace = 227;
+int color_ascii = 111;
+int color_nonascii = 204;
 
 // get the color code based on the category of the byte
 int get_color_code(unsigned char c) {
