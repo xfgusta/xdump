@@ -179,16 +179,9 @@ int str_to_color_code(char *str) {
 
     errno = 0;
     color = strtol(str, &endptr, 10);
-    if(errno != 0) {
-        print_error("XDUMP_COLORS: strtol failed for \"%s\": %s\n", str,
-                    strerror(errno));
-        exit(EXIT_FAILURE);
-    } else if(str == endptr) {
-        print_error("XDUMP_COLORS: no digits were found for \"%s\"\n", str);
-        exit(EXIT_FAILURE);
-    } else if(color < 0 || color > 255) {
-        print_error("XDUMP_COLORS: \"%d\" for \"%s\" is out of range\n", color,
-                    str);
+    if(errno != 0 || str == endptr || (color < 0 || color > 255)) {
+        print_error("XDUMP_COLORS: failed to convert the color code for \"%s\""
+                    "\n", str);
         exit(EXIT_FAILURE);
     }
 
