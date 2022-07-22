@@ -169,6 +169,9 @@ void xdump(FILE *file, char *filename) {
 
     pretty_printf(color_offset, "%08lx", offset);
     putchar('\n');
+
+    if(ferror(file))
+        print_error("error while reading \"%s\"\n", filename);
 }
 
 // convert a string to a valid 8-bit color code
