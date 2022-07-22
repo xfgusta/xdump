@@ -64,6 +64,10 @@ void xdump(FILE *file, char *filename) {
     long offset = skip_opt;
     long group = group_opt > 0 ? group_opt : columns_opt / 2;
 
+    // don't interpret any bytes
+    if(length_opt == 0)
+        return;
+
     // skip bytes from the beginning of the file
     if(skip_opt > 0) {
         struct stat st;
@@ -75,13 +79,13 @@ void xdump(FILE *file, char *filename) {
             return;
         }
 
-        // this way the offset will not be greater than the file size
+        // correct the offset if it is greater than the file size
         if(S_ISREG(st.st_mode) && skip_opt > st.st_size)
             offset = st.st_size;
 
         errno = 0;
         if(fseek(file, skip_opt, SEEK_SET) == -1) {
-            // if the file isn't seekable
+            // consume byte by byte if the file isn't seekable
             if(errno == ESPIPE) {
                 long pos = 0;
                 while(pos != skip_opt && fgetc(file) != EOF)
@@ -103,7 +107,7 @@ void xdump(FILE *file, char *filename) {
 
         printf("  ");
 
-        // print hexadecimal area
+        // print hex panel
         for(long i = 0; i < columns_opt; i++) {
             unsigned char c = buffer[i];
 
@@ -114,7 +118,7 @@ void xdump(FILE *file, char *filename) {
                     putchar(' ');
             }
 
-            // stop interpreting the bytes if the -n option was used
+            // fill with spaces when the length is reached
             if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
                 printf("  ");
                 continue;
@@ -128,17 +132,15 @@ void xdump(FILE *file, char *filename) {
 
         printf("  ");
 
-        // print characters area
+        // print char panel
+        pretty_printf(color_bar, "|");
+
         for(long i = 0; i < columns_opt; i++) {
             unsigned char c = buffer[i];
 
-            if(i == 0)
-                pretty_printf(color_bar, "|");
-
-            if(length_opt != -1 && offset + i - skip_opt >= length_opt) {
-                pretty_printf(color_bar, "|");
+            // don't print char when the length is reached
+            if(length_opt != -1 && offset + i - skip_opt >= length_opt)
                 break;
-            }
 
             if(i < bytes_read) {
                 if(isprint(c))
@@ -146,16 +148,18 @@ void xdump(FILE *file, char *filename) {
                 else
                     pretty_printf(get_color_code(c), ".");
             }
-
-            if(i + 1 == bytes_read)
-                pretty_printf(color_bar, "|");
         }
 
+        pretty_printf(color_bar, "|");
+
+        // line done
         putchar('\n');
 
         offset += bytes_read;
 
-        if(length_opt != -1 && offset >= length_opt) {
+        // stop interpreting the bytes when the length is reached and correct
+        // the offset if some bytes were skipped
+        if(length_opt != -1 && offset - skip_opt >= length_opt) {
             offset = skip_opt + length_opt;
             break;
         }
