@@ -273,15 +273,31 @@ int main(int argc, char **argv) {
                 break;
             case 's':
                 skip_opt = str_to_long(optarg);
+                if(skip_opt < 0) {
+                    print_error("OFFSET cannot be less than zero\n");
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case 'n':
                 length_opt = str_to_long(optarg);
+                if(length_opt < 0) {
+                    print_error("LENGTH cannot be less than zero\n");
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case 'w':
                 columns_opt = str_to_long(optarg);
+                if(columns_opt < 0) {
+                    print_error("COUNT cannot be less than zero\n");
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case 'g':
                 group_opt = str_to_long(optarg);
+                if(group_opt < 0) {
+                    print_error("SIZE cannot be less than zero\n");
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case '?':
                 exit(EXIT_FAILURE);
