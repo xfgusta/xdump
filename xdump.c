@@ -43,12 +43,12 @@ int get_color_code(unsigned char c) {
 }
 
 // print color output based on the color code if NO_COLOR is off
-void pretty_printf(int color_code, char *fmt, ...) {
+void pretty_printf(int code, char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
     if(!no_color_is_on)
-        printf("\033[38;5;%dm", color_code);
+        printf("\033[38;5;%dm", code);
 
     vprintf(fmt, args);
 
@@ -74,8 +74,9 @@ void xdump(FILE *file, char *filename) {
 
         errno = 0;
         if(fstat(fileno(file), &st) == -1) {
-            print_error("cannot stat file \"%s\": %s", filename,
-                        strerror(errno));
+            print_error(
+                "cannot stat file \"%s\": %s\n", filename, strerror(errno)
+            );
             return;
         }
 
@@ -88,6 +89,7 @@ void xdump(FILE *file, char *filename) {
             // consume byte by byte if the file isn't seekable
             if(errno == ESPIPE) {
                 long pos = 0;
+
                 while(pos != skip_opt && fgetc(file) != EOF)
                     pos++;
 
@@ -171,18 +173,19 @@ void xdump(FILE *file, char *filename) {
 
 // convert a string to a valid 8-bit color code
 int str_to_color_code(char *str) {
-    int color;
+    int code;
     char *endptr;
 
     errno = 0;
-    color = strtol(str, &endptr, 10);
-    if(errno != 0 || str == endptr || (color < 0 || color > 255)) {
-        print_error("XDUMP_COLORS: failed to convert the color code for \"%s\""
-                    "\n", str);
+    code = strtol(str, &endptr, 10);
+    if(errno != 0 || str == endptr || (code < 0 || code > 255)) {
+        print_error(
+            "XDUMP_COLORS: failed to convert the color code for \"%s\"\n", str
+        );
         exit(EXIT_FAILURE);
     }
 
-    return color;
+    return code;
 }
 
 // parse XDUMP_COLORS format string and set the specified colors
@@ -326,8 +329,9 @@ int main(int argc, char **argv) {
 
             file = fopen(filename, "r");
             if(!file) {
-                print_error("cannot open \"%s\": %s\n", filename,
-                            strerror(errno));
+                print_error(
+                    "cannot open \"%s\": %s\n", filename, strerror(errno)
+                );
                 continue;
             }
 
@@ -343,12 +347,11 @@ int main(int argc, char **argv) {
             fclose(file);
 
             // separate the output of each file
-            if(argc != 1 && i+1 < argc)
+            if(argc != 1 && i + 1 < argc)
                 putchar('\n');
         }
-    } else {
+    } else
         xdump(stdin, "(standard input)");
-    }
 
     exit(EXIT_SUCCESS);
 }
