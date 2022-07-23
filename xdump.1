@@ -1,0 +1,69 @@
+.TH xdump 1 "2022-07-22" "xdump"
+
+.SH NAME
+xdump \- display file contents in hexadecimal and ASCII 
+
+.SH SYNOPSIS
+\fBxdump\fR [\fB-h\fR] [\fB-v\fR] [\fB-s\fR \fIOFFSET\fR] [\fB-n\fR \fILENGTH\fR] [\fB-w\fR \fICOUNT\fR] [\fB-g\fR \fISIZE\fR] [\fIFILE\fR...]
+
+.SH DESCRIPTION
+The \fBxdump\fR utility is a filter which displays the specified file, or standard input if no file is specified, in hexadecimal and ASCII format. It uses a colored output to distinguish different categories of byte.
+
+.SH OPTIONS
+
+.IP "\fB-h\fR"
+Display the help message and exit
+
+.IP "\fB-v\fR"
+Display the version number of xdump and exit
+
+.IP "\fB-s\fR \fIOFFSET\fR"
+Skip \fIOFFSET\fR bytes from the beginning of the input
+
+.IP "\fB-n\fR \fILENGTH\fR"
+Interpret only \fILENGTH\fR bytes of input
+
+.IP "\fB-w\fR \fICOUNT\fR"
+Print \fICOUNT\fR hex per line
+
+.IP "\fB-g\fR \fISIZE\fR"
+Group output into \fISIZE\fR-hex groups
+
+.SH ENVIRONMENT
+The behavior of \fBxdump\fR is affected by the following environment variables.
+
+.IP "\fBNO_COLOR\fR"
+When present and not an empty string (regardless of its value), prevents the addition of color.
+
+.IP "\fBXDUMP_COLORS\fR"
+Specifies the colors used to highlight various parts of the output. Its value is a semicolon-separated list that defaults to \fBoff=7;bar=7;nul=238;print=7;space=227;ascii=111;nonascii=204\fR.
+
+.B off
+offset
+
+.B bar
+vertical bar
+
+.B nul
+NULL bytes
+
+.B print
+printable ASCII characters
+
+.B space
+ASCII whitespace characters
+
+.B ascii
+other ASCII characters
+
+.B nonascii
+non-ASCII
+
+.SH AUTHOR
+Gustavo Costa <xfgusta@gmail.com>
+
+.SH BUGS
+Report bugs to <https://github.com/xfgusta/xdump/issues>
+
+.SH COPYRIGHT
+Copyright (c) 2022 Gustavo Costa
