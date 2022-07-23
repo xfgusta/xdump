@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#define VERSION "0.1.1"
+#define VERSION "1.0.0"
 
 #define print_error(...) fprintf(stderr, "xdump: " __VA_ARGS__);
 
