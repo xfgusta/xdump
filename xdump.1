@@ -1,40 +1,69 @@
-.TH XDUMP 1 "October 2021" "0.1.1" "User Commands"
-.SH NAME
-xdump \- display file contents in hexadecimal and ASCII
-.SH SYNOPSIS
-.B xdump
-[\fB\-hv\fR] [\fB\-ac\fR] [\fB\-w\fR \fIcolumns\fR] [\fB\-s\fR \fIoffset\fR] [\fB\-n\fR \fIlength\fR] [\fIfile\fR]
-.SH DESCRIPTION
-The
-.B xdump
-utility is a filter which displays the specified file, or standard input if no file is specified, in hexadecimal and ASCII format. It works like \fBhexdump -C\fR by default.
-.SH OPTIONS
-.TP
-.BR \-a
-Adjust the number of columns (bytes) based on the terminal width.  If fail, fall back to 16 columns.
-.TP
-.BR \-c
-Colorize the output (hexadecimal and ASCII). Printable characters are green; whitespace, yellow; NUL, gray; and ASCII characters are blue.
-.TP
-.BR \-w " " \fIcolumns\fR
-Number of \fIcolumns\fR (bytes) to show in one row. Default is 16, which fits into a terminal 80 characters wide.
-.TP
-.BR \-s " " \fIoffset\fR
-Skip \fIoffset\fR bytes from the beginning of the input.
-.TP
-.BR \-n " " \fIlength\fR
-Interpret only \fIlength\fR bytes of input.
-.TP
-.BR \-v
-Display version information and exit.
-.TP
-.BR \-h
-Display help text and exit.
-.SH AUTHOR
-Written by Gustavo Costa <xfgusta@gmail.com>.
-.SH REPORTING BUGS
-GitHub issues: https://github.com/xfgusta/xdump/issues.
-.SH COPYRIGHT
-MIT License
+.TH xdump 1 "2022-07-22" "xdump"
 
-Copyright (c) 2021 Gustavo Costa.
+.SH NAME
+xdump \- display file contents in hexadecimal and ASCII 
+
+.SH SYNOPSIS
+\fBxdump\fR [\fB-h\fR] [\fB-v\fR] [\fB-s\fR \fIOFFSET\fR] [\fB-n\fR \fILENGTH\fR] [\fB-w\fR \fICOUNT\fR] [\fB-g\fR \fISIZE\fR] [\fIFILE\fR...]
+
+.SH DESCRIPTION
+The \fBxdump\fR utility is a filter which displays the specified file, or standard input if no file is specified, in hexadecimal and ASCII format. It uses a colored output to distinguish different categories of byte.
+
+.SH OPTIONS
+
+.IP "\fB-h\fR"
+Display the help message and exit
+
+.IP "\fB-v\fR"
+Display the version number of xdump and exit
+
+.IP "\fB-s\fR \fIOFFSET\fR"
+Skip \fIOFFSET\fR bytes from the beginning of the input
+
+.IP "\fB-n\fR \fILENGTH\fR"
+Interpret only \fILENGTH\fR bytes of input
+
+.IP "\fB-w\fR \fICOUNT\fR"
+Print \fICOUNT\fR hex per line
+
+.IP "\fB-g\fR \fISIZE\fR"
+Group output into \fISIZE\fR-hex groups
+
+.SH ENVIRONMENT
+The behavior of \fBxdump\fR is affected by the following environment variables.
+
+.IP "\fBNO_COLOR\fR"
+When present and not an empty string (regardless of its value), prevents the addition of color.
+
+.IP "\fBXDUMP_COLORS\fR"
+Specifies the colors used to highlight various parts of the output. Its value is a semicolon-separated list that defaults to \fBoff=7;bar=7;nul=238;print=7;space=227;ascii=111;nonascii=204\fR.
+
+.B off
+offset
+
+.B bar
+vertical bar
+
+.B nul
+NULL bytes
+
+.B print
+printable ASCII characters
+
+.B space
+ASCII whitespace characters
+
+.B ascii
+other ASCII characters
+
+.B nonascii
+non-ASCII
+
+.SH AUTHOR
+Gustavo Costa <xfgusta@gmail.com>
+
+.SH BUGS
+Report bugs to <https://github.com/xfgusta/xdump/issues>
+
+.SH COPYRIGHT
+Copyright (c) 2022 Gustavo Costa
