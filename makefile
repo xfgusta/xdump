@@ -1,12 +1,12 @@
-CC=gcc
-CFLAGS=-Wall -Wextra -Werror -pedantic -std=c11 -O2
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -Werror -pedantic -std=c11 -O2
 
-PREFIX=/usr/local
-BINDIR=$(PREFIX)/bin
-MANDIR=$(PREFIX)/share/man
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+MANDIR ?= $(PREFIX)/share/man
 
-INSTALL=install -p -m 0755
-INSTALL_MAN=install -p -m 0644
+INSTALL ?= install -p -m 0755
+INSTALL_MAN ?= install -p -m 0644
 
 xdump: xdump.c
 	$(CC) $(CFLAGS) xdump.c $(LDFLAGS) -o xdump
